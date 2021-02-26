@@ -60,6 +60,7 @@ export interface RequiredOptions extends Options {
   width: number;
   height: number;
   margin: number;
+  borderRadius: number;
   data: string;
   qrOptions: {
     typeNumber: TypeNumber;
@@ -81,6 +82,12 @@ export interface RequiredOptions extends Options {
     color: string;
     gradient?: Gradient;
   };
+  frameOptions: {
+    xSize: number;
+    topSize: number;
+    bottomSize: number;
+    image: string;
+  };
 }
 
 const defaultOptions: RequiredOptions = {
@@ -88,6 +95,7 @@ const defaultOptions: RequiredOptions = {
   height: 300,
   data: "",
   margin: 0,
+  borderRadius: 0,
   qrOptions: {
     typeNumber: qrTypes[0],
     mode: undefined,
@@ -105,6 +113,12 @@ const defaultOptions: RequiredOptions = {
   },
   backgroundOptions: {
     color: "#fff"
+  },
+  frameOptions: {
+    xSize: 0,
+    topSize: 0,
+    bottomSize: 0,
+    image: ""
   }
 };
 

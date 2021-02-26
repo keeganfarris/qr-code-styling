@@ -38,6 +38,8 @@ export default class QRCanvas {
   //TODO don't pass all options to this class
   constructor(options: RequiredOptions) {
     this._canvas = document.createElement("canvas");
+    options.width = options.width + options.frameOptions.xSize * 2;
+    options.height = options.height + options.frameOptions.topSize + options.frameOptions.bottomSize;
     this._canvas.width = options.width;
     this._canvas.height = options.height;
     this._options = options;
@@ -69,7 +71,10 @@ export default class QRCanvas {
 
   async drawQR(qr: QRCode): Promise<void> {
     const count = qr.getModuleCount();
-    const minSize = Math.min(this._options.width, this._options.height) - this._options.margin * 2;
+    const minSize =
+      Math.min(this._options.width, this._options.height) -
+      this._options.margin * 2 -
+      this._options.frameOptions.xSize * 2;
     const dotSize = Math.floor(minSize / count);
     let drawImageSize = {
       hideXDots: 0,
@@ -97,6 +102,7 @@ export default class QRCanvas {
     }
 
     this.clear();
+    this.drawFrame();
     this.drawBackground();
     this.drawDots((i: number, j: number): boolean => {
       if (this._options.imageOptions.hideBackgroundDots) {
@@ -127,6 +133,18 @@ export default class QRCanvas {
     }
   }
 
+  drawFrame(): void {
+    const canvasContext = this.context;
+    const options = this._options;
+    if (canvasContext && options.frameOptions.image) {
+      const img = new Image();
+      img.onload = function () {
+        canvasContext.drawImage(img, 0, 0, options.width, options.height);
+      };
+      img.src = options.frameOptions.image;
+    }
+  }
+
   drawBackground(): void {
     const canvasContext = this.context;
     const options = this._options;
@@ -151,7 +169,13 @@ export default class QRCanvas {
       } else if (options.backgroundOptions.color) {
         canvasContext.fillStyle = options.backgroundOptions.color;
       }
-      canvasContext.fillRect(0, 0, this._canvas.width, this._canvas.height);
+      this.fillRoundRect(
+        options.frameOptions.xSize,
+        options.frameOptions.topSize,
+        this._canvas.width - options.frameOptions.xSize * 2,
+        this._canvas.height - options.frameOptions.topSize - options.frameOptions.bottomSize,
+        options.borderRadius
+      );
     }
   }
 
@@ -173,10 +197,13 @@ export default class QRCanvas {
       throw "The canvas is too small.";
     }
 
-    const minSize = Math.min(options.width, options.height) - options.margin * 2;
+    const minSize = Math.min(options.width, options.height) - options.margin * 2 - options.frameOptions.xSize * 2;
     const dotSize = Math.floor(minSize / count);
     const xBeginning = Math.floor((options.width - count * dotSize) / 2);
-    const yBeginning = Math.floor((options.height - count * dotSize) / 2);
+    const yBeginning =
+      Math.floor(
+        (options.height - options.frameOptions.topSize - options.frameOptions.bottomSize - count * dotSize) / 2
+      ) + options.frameOptions.topSize;
     const dot = new QRDot({ context: canvasContext, type: options.dotsOptions.type });
 
     canvasContext.beginPath();
@@ -239,12 +266,15 @@ export default class QRCanvas {
     const options = this._options;
 
     const count = this._qr.getModuleCount();
-    const minSize = Math.min(options.width, options.height) - options.margin * 2;
+    const minSize = Math.min(options.width, options.height) - options.margin * 2 - options.frameOptions.xSize * 2;
     const dotSize = Math.floor(minSize / count);
     const cornersSquareSize = dotSize * 7;
     const cornersDotSize = dotSize * 3;
     const xBeginning = Math.floor((options.width - count * dotSize) / 2);
-    const yBeginning = Math.floor((options.height - count * dotSize) / 2);
+    const yBeginning =
+      Math.floor(
+        (options.height - options.frameOptions.topSize - options.frameOptions.bottomSize - count * dotSize) / 2
+      ) + options.frameOptions.topSize;
 
     [
       [0, 0, 0],
@@ -400,13 +430,35 @@ export default class QRCanvas {
 
     const options = this._options;
     const xBeginning = Math.floor((options.width - count * dotSize) / 2);
-    const yBeginning = Math.floor((options.height - count * dotSize) / 2);
+    const yBeginning =
+      Math.floor(
+        (options.height - options.frameOptions.topSize - options.frameOptions.bottomSize - count * dotSize) / 2
+      ) + options.frameOptions.topSize;
     const dx = xBeginning + options.imageOptions.margin + (count * dotSize - width) / 2;
     const dy = yBeginning + options.imageOptions.margin + (count * dotSize - height) / 2;
     const dw = width - options.imageOptions.margin * 2;
     const dh = height - options.imageOptions.margin * 2;
 
     canvasContext.drawImage(this._image, dx, dy, dw < 0 ? 0 : dw, dh < 0 ? 0 : dh);
+  }
+
+  fillRoundRect(x: number, y: number, width: number, height: number, radius: number): void {
+    const canvasContext = this.context;
+
+    if (!canvasContext) return;
+
+    canvasContext.beginPath();
+    canvasContext.moveTo(x + radius, y);
+    canvasContext.lineTo(x + width - radius, y);
+    canvasContext.quadraticCurveTo(x + width, y, x + width, y + radius);
+    canvasContext.lineTo(x + width, y + height - radius);
+    canvasContext.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    canvasContext.lineTo(x + radius, y + height);
+    canvasContext.quadraticCurveTo(x, y + height, x, y + height - radius);
+    canvasContext.lineTo(x, y + radius);
+    canvasContext.quadraticCurveTo(x, y, x + radius, y);
+    canvasContext.closePath();
+    canvasContext.fill();
   }
 
   _createGradient({
