@@ -1,4 +1,3 @@
-import QRCanvas from "./QRCanvas";
 import { Options, RequiredOptions } from "./QROptions";
 import { Extension, QRCode } from "../types";
 declare type DownloadOptions = {
@@ -8,13 +7,27 @@ declare type DownloadOptions = {
 export default class QRCodeStyling {
     _options: RequiredOptions;
     _container?: HTMLElement;
-    _canvas?: QRCanvas;
+    _canvas?: HTMLCanvasElement;
     _qr?: QRCode;
     _drawingPromise?: Promise<void>;
-    constructor(options?: Partial<Options>);
+    _id: number;
+    _started: boolean;
+    _resolveDrawingEnded?: () => void;
+    _retryCount: number;
+    constructor(options: Partial<Options>, container: HTMLElement);
     static _clearContainer(container?: HTMLElement): void;
     update(options?: Partial<Options>): void;
+    drawQR(): void;
+    getFrameImage(): Promise<ImageBitmap | void>;
+    handleWorkerMessage(event: {
+        data: {
+            id: number;
+            key: string;
+        };
+    }): void;
+    drawQRFromWorker(): Promise<void>;
     append(container?: HTMLElement): void;
     download(downloadOptions?: Partial<DownloadOptions> | string): void;
+    clear(): void;
 }
 export {};
