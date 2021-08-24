@@ -14,6 +14,7 @@ export default class QRCodeStyling {
     _started: boolean;
     _resolveFrame: (image: void | ImageBitmap | null) => void;
     _resolveDrawingEnded?: () => void;
+    _rejectDrawingEnded?: (error: Error | undefined) => void;
     _retryCount: number;
     constructor(options: Partial<Options>, container: HTMLElement);
     static _clearContainer(container?: HTMLElement): void;
@@ -24,6 +25,7 @@ export default class QRCodeStyling {
         data: {
             id: number;
             key: string;
+            error?: Error;
         };
     }): void;
     drawQRFromWorker(): Promise<void>;
