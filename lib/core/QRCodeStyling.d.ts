@@ -12,7 +12,7 @@ export default class QRCodeStyling {
     _drawingPromise?: Promise<void>;
     _id: number;
     _started: boolean;
-    _resolveFrame: (image: void | ImageBitmap | null) => void;
+    _resolveImages: (image: void[] | ImageBitmap[] | null) => void;
     _resolveDrawingEnded?: () => void;
     _rejectDrawingEnded?: (error: Error | undefined) => void;
     _retryCount: number;
@@ -20,7 +20,8 @@ export default class QRCodeStyling {
     static _clearContainer(container?: HTMLElement): void;
     update(options?: Partial<Options>): void;
     drawQR(): void;
-    getFrameImage(): Promise<ImageBitmap | void | null>;
+    getImage(image: string, width: number, height: number): Promise<ImageBitmap | void>;
+    getImages(): Promise<(ImageBitmap | void)[] | null>;
     handleWorkerMessage(event: {
         data: {
             id: number;
