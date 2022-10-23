@@ -2,7 +2,7 @@ import getMode from "../tools/getMode";
 import mergeDeep from "../tools/merge";
 import downloadURI from "../tools/downloadURI";
 import QRCanvas from "./QRCanvas";
-import defaultOptions, { Options, RequiredOptions } from "./QROptions";
+import defaultOptions, { Options, RequiredOptions, FrameOptions } from "./QROptions";
 import sanitizeOptions from "../tools/sanitizeOptions";
 import { Extension, QRCode } from "../types";
 import qrcode from "qrcode-generator";
@@ -48,8 +48,13 @@ export default class QRCodeStyling {
     }
   }
 
-  update(options?: Partial<Options>): void {
+  update(options?: Partial<RequiredOptions>): void {
     QRCodeStyling._clearContainer(this._container);
+
+    if (options?.frameOptions) {
+      this._options.frameOptions = { ...options?.frameOptions };
+    }
+
     this._options = options ? sanitizeOptions(mergeDeep(this._options, options) as RequiredOptions) : this._options;
 
     if (!this._options.data) {
@@ -98,12 +103,21 @@ export default class QRCodeStyling {
     });
   }
 
+  getXPadding(options: FrameOptions): number {
+    if (options.rightSize) {
+      const { leftSize = 0, rightSize = 0 } = options;
+      return leftSize + rightSize;
+    }
+    const { xSize = 0 } = options;
+    return xSize * 2;
+  }
+
   getImages(): Promise<(ImageBitmap | void)[] | null> {
     return new Promise((resolve, reject) => {
       this._resolveImages = resolve;
       const frameImagePromise = this.getImage(
         this._options.frameOptions.image,
-        this._options.width + this._options.frameOptions.xSize * 2,
+        this._options.width + this.getXPadding(this._options.frameOptions),
         this._options.height + this._options.frameOptions.topSize + this._options.frameOptions.bottomSize
       );
 
