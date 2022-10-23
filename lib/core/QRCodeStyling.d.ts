@@ -1,4 +1,4 @@
-import { Options, RequiredOptions } from "./QROptions";
+import { Options, RequiredOptions, FrameOptions } from "./QROptions";
 import { Extension, QRCode } from "../types";
 declare type DownloadOptions = {
     name?: string;
@@ -18,9 +18,10 @@ export default class QRCodeStyling {
     _retryCount: number;
     constructor(options: Partial<Options>, container: HTMLElement);
     static _clearContainer(container?: HTMLElement): void;
-    update(options?: Partial<Options>): void;
+    update(options?: Partial<RequiredOptions>): void;
     drawQR(): void;
     getImage(image: string, width: number, height: number): Promise<ImageBitmap | void>;
+    getXPadding(options: FrameOptions): number;
     getImages(): Promise<(ImageBitmap | void)[] | null>;
     handleWorkerMessage(event: {
         data: {
