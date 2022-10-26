@@ -1,4 +1,4 @@
-import { RequiredOptions, Gradient } from "./QROptions";
+import { RequiredOptions, Gradient, FrameOptions } from "./QROptions";
 import { QRCode } from "../types";
 declare type FilterFunction = (i: number, j: number) => boolean;
 export default class QRCanvas {
@@ -9,6 +9,7 @@ export default class QRCanvas {
     _workerCtx: Worker;
     _frameImage: ImageBitmap | HTMLImageElement | void;
     constructor(options: RequiredOptions, canvas: HTMLCanvasElement, frameImage?: ImageBitmap, qrImage?: ImageBitmap);
+    getXPadding(options: FrameOptions): number;
     get context(): CanvasRenderingContext2D | null;
     get width(): number;
     get height(): number;
@@ -20,6 +21,7 @@ export default class QRCanvas {
     drawFrame(): void;
     drawFrameBackground(): void;
     drawBackground(): void;
+    getXBeginning(count: number, dotSize: number): number;
     drawDots(filter?: FilterFunction): void;
     drawCorners(filter?: FilterFunction): void;
     loadAssets(): Promise<void[]>;

@@ -3,7 +3,7 @@ import errorCorrectionPercents from "../constants/errorCorrectionPercents";
 import QRDot from "./QRDot";
 import QRCornerSquare from "./QRCornerSquare";
 import QRCornerDot from "./QRCornerDot";
-import { RequiredOptions, Gradient } from "./QROptions";
+import { RequiredOptions, Gradient, FrameOptions } from "./QROptions";
 import gradientTypes from "../constants/gradientTypes";
 import { QRCode } from "../types";
 
@@ -43,11 +43,22 @@ export default class QRCanvas {
     this._frameImage = frameImage;
     this._image = qrImage;
     this._canvas = canvas;
-    options.width = options.width + options.frameOptions.xSize * 2;
-    options.height = options.height + options.frameOptions.topSize + options.frameOptions.bottomSize;
+    const { topSize, bottomSize } = options.frameOptions;
+    const xPadding = this.getXPadding(options.frameOptions);
+    options.width = options.width + xPadding;
+    options.height = options.height + topSize + bottomSize;
     this._canvas.width = options.width;
     this._canvas.height = options.height;
     this._options = options;
+  }
+
+  getXPadding(options: FrameOptions): number {
+    if (options.rightSize) {
+      const { leftSize = 0, rightSize = 0 } = options;
+      return leftSize + rightSize;
+    }
+    const { xSize = 0 } = options;
+    return xSize * 2;
   }
 
   get context(): CanvasRenderingContext2D | null {
@@ -83,7 +94,7 @@ export default class QRCanvas {
     const minSize =
       Math.min(this._options.width, this._options.height) -
       this._options.margin * 2 -
-      this._options.frameOptions.xSize * 2;
+      this.getXPadding(this._options.frameOptions);
     const dotSize = Math.floor(minSize / count);
     let drawImageSize = {
       hideXDots: 0,
@@ -113,6 +124,7 @@ export default class QRCanvas {
 
     this.clear();
     this.drawFrameBackground();
+    this.drawFrame();
     this.drawBackground();
     this.drawDots((i: number, j: number): boolean => {
       if (this._options.imageOptions.hideBackgroundDots) {
@@ -141,8 +153,6 @@ export default class QRCanvas {
     if (this._options.image) {
       this.drawImage({ width: drawImageSize.width, height: drawImageSize.height, count, dotSize });
     }
-
-    this.drawFrame();
   }
 
   loadFrameImage(): Promise<void> {
@@ -205,14 +215,24 @@ export default class QRCanvas {
       } else if (options.backgroundOptions.color) {
         canvasContext.fillStyle = options.backgroundOptions.color;
       }
+      const start = options.frameOptions.leftSize || options.frameOptions.xSize || 0;
       this.fillRoundRect(
-        options.frameOptions.xSize,
+        start,
         options.frameOptions.topSize,
-        this._canvas.width - options.frameOptions.xSize * 2,
+        this._canvas.width - this.getXPadding(options.frameOptions),
         this._canvas.height - options.frameOptions.topSize - options.frameOptions.bottomSize,
         options.borderRadius
       );
     }
+  }
+
+  getXBeginning(count: number, dotSize: number): number {
+    const { width, frameOptions } = this._options;
+    if (frameOptions.xSize) {
+      return Math.floor((width - count * dotSize) / 2);
+    }
+    const { leftSize = 0, rightSize = 0 } = frameOptions;
+    return Math.floor((width - leftSize - rightSize - count * dotSize) / 2) + leftSize;
   }
 
   drawDots(filter?: FilterFunction): void {
@@ -233,9 +253,10 @@ export default class QRCanvas {
       throw "The canvas is too small.";
     }
 
-    const minSize = Math.min(options.width, options.height) - options.margin * 2 - options.frameOptions.xSize * 2;
+    const minSize =
+      Math.min(options.width, options.height) - options.margin * 2 - this.getXPadding(options.frameOptions);
     const dotSize = Math.floor(minSize / count);
-    const xBeginning = Math.floor((options.width - count * dotSize) / 2);
+    const xBeginning = this.getXBeginning(count, dotSize);
     const yBeginning =
       Math.floor(
         (options.height - options.frameOptions.topSize - options.frameOptions.bottomSize - count * dotSize) / 2
@@ -302,11 +323,12 @@ export default class QRCanvas {
     const options = this._options;
 
     const count = this._qr.getModuleCount();
-    const minSize = Math.min(options.width, options.height) - options.margin * 2 - options.frameOptions.xSize * 2;
+    const minSize =
+      Math.min(options.width, options.height) - options.margin * 2 - this.getXPadding(options.frameOptions);
     const dotSize = Math.floor(minSize / count);
     const cornersSquareSize = dotSize * 7;
     const cornersDotSize = dotSize * 3;
-    const xBeginning = Math.floor((options.width - count * dotSize) / 2);
+    const xBeginning = this.getXBeginning(count, dotSize);
     const yBeginning =
       Math.floor(
         (options.height - options.frameOptions.topSize - options.frameOptions.bottomSize - count * dotSize) / 2

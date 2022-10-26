@@ -54,7 +54,21 @@ export type Options = {
     color?: string;
     gradient?: Gradient;
   };
+  margin?: number;
+  borderRadius?: number;
+  offscreen?: boolean;
+  frameOptions?: FrameOptions;
 };
+
+export interface FrameOptions {
+  xSize?: number;
+  leftSize?: number;
+  rightSize?: number;
+  topSize: number;
+  bottomSize: number;
+  image: string;
+  backgroundColor: string;
+}
 
 export interface RequiredOptions extends Options {
   width: number;
@@ -83,13 +97,7 @@ export interface RequiredOptions extends Options {
     color: string;
     gradient?: Gradient;
   };
-  frameOptions: {
-    xSize: number;
-    topSize: number;
-    bottomSize: number;
-    image: string;
-    backgroundColor: string;
-  };
+  frameOptions: FrameOptions;
 }
 
 const defaultOptions: RequiredOptions = {
@@ -119,6 +127,8 @@ const defaultOptions: RequiredOptions = {
   },
   frameOptions: {
     xSize: 0,
+    leftSize: 0,
+    rightSize: 0,
     topSize: 0,
     bottomSize: 0,
     image: "",
