@@ -87,3 +87,12 @@ export interface RequiredOptions extends Options {
 }
 declare const defaultOptions: RequiredOptions;
 export default defaultOptions;
+export interface CreateGradientOptions {
+    context: CanvasRenderingContext2D;
+    options: Gradient;
+    additionalRotation: number;
+    x: number;
+    y: number;
+    width: number;
+    height?: number;
+}
