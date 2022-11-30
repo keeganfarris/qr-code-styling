@@ -570,7 +570,6 @@ export default class QRCanvas {
 
   _createGradient(opt: CreateGradientOptions): CanvasGradient {
     let gradient;
-    console.log("_createGradient opt", opt);
     const { context, options, additionalRotation, x, y, width, height } = opt;
     const computedHeight = height || width;
 
