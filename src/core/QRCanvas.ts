@@ -39,6 +39,7 @@ export default class QRCanvas {
 
   //TODO don't pass all options to this class
   constructor(options: RequiredOptions, canvas: HTMLCanvasElement, frameImage?: ImageBitmap, qrImage?: ImageBitmap) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this._workerCtx = self as any;
     this._frameImage = frameImage;
     this._image = qrImage;
@@ -176,7 +177,7 @@ export default class QRCanvas {
     const canvasContext = this.context as CanvasRenderingContext2D;
     const options = this._options;
     if (canvasContext && options.frameOptions.image && this._frameImage) {
-      canvasContext.drawImage((this._frameImage as unknown) as CanvasImageSource, 0, 0, options.width, options.height);
+      canvasContext.drawImage(this._frameImage as CanvasImageSource, 0, 0, options.width, options.height);
     }
   }
 
