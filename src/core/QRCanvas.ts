@@ -185,10 +185,30 @@ export default class QRCanvas {
     const canvasContext = this.context;
     const options = this._options;
 
-    if (canvasContext && options.frameOptions.backgroundColor) {
-      canvasContext.fillStyle = options.frameOptions.backgroundColor;
+    if (canvasContext) {
+      if (options.frameOptions.background.color || options.frameOptions.background.gradient) {
+        if (options.frameOptions.background.gradient) {
+          const gradientOptions = options.frameOptions.background.gradient;
+          const gradient = this._createGradient({
+            context: canvasContext,
+            options: gradientOptions,
+            additionalRotation: 0,
+            x: 0,
+            y: 0,
+            width: this._canvas.width,
+            height: this._canvas.height
+          });
 
-      this.fillRoundRect(0, 0, this._canvas.width, this._canvas.height, options.borderRadius);
+          gradientOptions.colorStops.forEach(({ offset, color }: { offset: number; color: string }) => {
+            gradient.addColorStop(offset, color);
+          });
+          canvasContext.fillStyle = gradient;
+        } else {
+          canvasContext.fillStyle = options.frameOptions.background.color;
+        }
+
+        this.fillRoundRect(0, 0, this._canvas.width, this._canvas.height, options.borderRadius);
+      }
     }
   }
 

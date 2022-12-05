@@ -67,7 +67,10 @@ export interface FrameOptions {
   topSize: number;
   bottomSize: number;
   image: string;
-  backgroundColor: string;
+  background: {
+    color: string;
+    gradient?: Gradient;
+  };
 }
 
 export interface RequiredOptions extends Options {
@@ -132,7 +135,9 @@ const defaultOptions: RequiredOptions = {
     topSize: 0,
     bottomSize: 0,
     image: "",
-    backgroundColor: ""
+    background: {
+      color: ""
+    }
   }
 };
 
