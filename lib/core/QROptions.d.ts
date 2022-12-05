@@ -54,7 +54,10 @@ export interface FrameOptions {
     topSize: number;
     bottomSize: number;
     image: string;
-    backgroundColor: string;
+    background: {
+        color: string;
+        gradient?: Gradient;
+    };
 }
 export interface RequiredOptions extends Options {
     width: number;
