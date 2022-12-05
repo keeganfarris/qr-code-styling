@@ -186,7 +186,10 @@ export default class QRCanvas {
     const options = this._options;
 
     if (canvasContext) {
-      if (options.frameOptions.background.color || options.frameOptions.background.gradient) {
+      if (
+        options.frameOptions.background &&
+        (options.frameOptions.background.color || options.frameOptions.background.gradient)
+      ) {
         if (options.frameOptions.background.gradient) {
           const gradientOptions = options.frameOptions.background.gradient;
           const gradient = this._createGradient({
