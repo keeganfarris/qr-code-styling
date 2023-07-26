@@ -1,5 +1,5 @@
 {
-  "name": "@cvcode/qr-code-styling",
+  "name": "@denodeland/qr-code-styling",
   "version": "1.4.0",
   "description": "Add a style and an image to your QR code",
   "main": "lib/qr-code-styling.js",
