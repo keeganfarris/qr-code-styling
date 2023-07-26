@@ -13,9 +13,17 @@ type DownloadOptions = {
   extension?: Extension;
 };
 
+let workerError = false;
+
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 const worker = new Worker();
+worker.onerror = (event: ErrorEvent) => {
+  workerError = true;
+  window.dispatchEvent(new CustomEvent("workerError"));
+  console.error(`Worker error: ${event.message}`);
+};
+
 let id = 0;
 
 export default class QRCodeStyling {
@@ -28,24 +36,36 @@ export default class QRCodeStyling {
   _started: boolean;
   _resolveImages: (image: void[] | ImageBitmap[] | null) => void;
   _resolveDrawingEnded?: () => void;
-  _rejectDrawingEnded?: (error: Error | undefined) => void;
+  _rejectDrawingEnded?: (error: Error | undefined | unknown) => void;
   _retryCount = 0;
 
   constructor(options: Partial<Options>, container: HTMLElement) {
     this._options = options ? sanitizeOptions(mergeDeep(defaultOptions, options) as RequiredOptions) : defaultOptions;
+    this._options.offscreen = workerError ? false : this._options.offscreen;
     this._id = id++;
     this._started = false;
     this._container = container;
     this.handleWorkerMessage = this.handleWorkerMessage.bind(this);
+    this.handleWorkerError = this.handleWorkerError.bind(this);
     this.clear = this.clear.bind(this);
     this._resolveImages = () => null;
     this.update();
+
+    if (this._options.offscreen) {
+      window.addEventListener("workerError", this.handleWorkerError);
+    }
   }
 
   static _clearContainer(container?: HTMLElement): void {
     if (container) {
       container.innerHTML = "";
     }
+  }
+
+  handleWorkerError(): void {
+    this._options.offscreen = false;
+    this.update();
+    window.removeEventListener("workerError", this.handleWorkerError);
   }
 
   update(options?: Partial<RequiredOptions>): void {
@@ -92,7 +112,11 @@ export default class QRCodeStyling {
     this._qr.make();
 
     const qrCanvas = new QRCanvas(this._options, this._canvas);
-    this._drawingPromise = qrCanvas.drawQR(this._qr);
+    if (!this._drawingPromise) {
+      this._drawingPromise = qrCanvas.drawQR(this._qr);
+    } else {
+      qrCanvas.drawQR(this._qr).then(this._resolveDrawingEnded, this._rejectDrawingEnded);
+    }
   }
 
   getImage(image: string, width: number, height: number): Promise<ImageBitmap | void> {
@@ -110,6 +134,10 @@ export default class QRCodeStyling {
         })
           .then(resolve)
           .catch(reject);
+      };
+
+      img.onerror = () => {
+        reject(new Error("Image load error"));
       };
 
       img.src = image;
@@ -173,17 +201,23 @@ export default class QRCodeStyling {
 
     // previous getFrame
     this._resolveImages(null);
-    const images = await this.getImages();
+    try {
+      const images = await this.getImages();
+      // ignore previous postMessage
+      if (images !== null) {
+        const [frameImage, qrImage] = images;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const offscreen = (this._canvas as any).transferControlToOffscreen();
 
-    // ignore previous postMessage
-    if (images !== null) {
-      const [frameImage, qrImage] = images;
-      const offscreen = (this._canvas as any).transferControlToOffscreen();
-
-      worker.postMessage(
-        { key: "initCanvas", canvas: offscreen, options: this._options, id: this._id, frameImage, qrImage },
-        [offscreen]
-      );
+        worker.postMessage(
+          { key: "initCanvas", canvas: offscreen, options: this._options, id: this._id, frameImage, qrImage },
+          [offscreen]
+        );
+      }
+    } catch (error) {
+      if (this._rejectDrawingEnded) {
+        this._rejectDrawingEnded(error);
+      }
     }
   }
 
@@ -233,6 +267,9 @@ export default class QRCodeStyling {
   }
 
   clear(): void {
-    worker.removeEventListener("message", this.handleWorkerMessage);
+    if (this._options.offscreen) {
+      worker.removeEventListener("message", this.handleWorkerMessage);
+      window.removeEventListener("workerError", this.handleWorkerError);
+    }
   }
 }

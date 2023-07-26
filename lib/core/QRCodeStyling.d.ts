@@ -14,10 +14,11 @@ export default class QRCodeStyling {
     _started: boolean;
     _resolveImages: (image: void[] | ImageBitmap[] | null) => void;
     _resolveDrawingEnded?: () => void;
-    _rejectDrawingEnded?: (error: Error | undefined) => void;
+    _rejectDrawingEnded?: (error: Error | undefined | unknown) => void;
     _retryCount: number;
     constructor(options: Partial<Options>, container: HTMLElement);
     static _clearContainer(container?: HTMLElement): void;
+    handleWorkerError(): void;
     update(options?: Partial<RequiredOptions>): void;
     drawQR(): void;
     getImage(image: string, width: number, height: number): Promise<ImageBitmap | void>;
