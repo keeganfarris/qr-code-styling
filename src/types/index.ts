@@ -6,8 +6,9 @@ export interface UnknownObject {
 export type DotType = "dots" | "rounded" | "classy" | "classy-rounded" | "square" | "extra-rounded";
 export type CornerDotType = "dot" | "square";
 export type CornerSquareType = "dot" | "square" | "extra-rounded";
-export type Extension = "png" | "jpeg" | "webp";
+export type Extension = "png" | "jpeg" | "webp" | "svg";
 export type GradientType = "radial" | "linear";
+export type DrawType = "canvas" | "svg";
 
 export interface DotTypes {
   [key: string]: DotType;
@@ -23,6 +24,10 @@ export interface CornerDotTypes {
 
 export interface CornerSquareTypes {
   [key: string]: CornerSquareType;
+}
+
+export interface DrawTypes {
+  [key: string]: DrawType;
 }
 
 export type TypeNumber =

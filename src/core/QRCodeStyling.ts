@@ -3,6 +3,8 @@ import mergeDeep from "../tools/merge";
 import downloadURI from "../tools/downloadURI";
 import QRCanvas from "./QRCanvas";
 import defaultOptions, { Options, RequiredOptions, FrameOptions } from "./QROptions";
+import QRSVG from "./QRSVG";
+import drawTypes from "../constants/drawTypes";
 import sanitizeOptions from "../tools/sanitizeOptions";
 import { Extension, QRCode } from "../types";
 import qrcode from "qrcode-generator";
@@ -28,8 +30,10 @@ let id = 0;
 
 export default class QRCodeStyling {
   _options: RequiredOptions;
+  _originalOptions: RequiredOptions;
   _container?: HTMLElement;
   _canvas?: HTMLCanvasElement;
+  _svg?: QRSVG;
   _qr?: QRCode;
   _drawingPromise?: Promise<void>;
   _id: number;
@@ -41,6 +45,7 @@ export default class QRCodeStyling {
 
   constructor(options: Partial<Options>, container: HTMLElement) {
     this._options = options ? sanitizeOptions(mergeDeep(defaultOptions, options) as RequiredOptions) : defaultOptions;
+    this._originalOptions = { ...this._options };
     this._options.offscreen = workerError ? false : this._options.offscreen;
     this._id = id++;
     this._started = false;
@@ -93,6 +98,10 @@ export default class QRCodeStyling {
       return;
     }
 
+    if (this._options.type === drawTypes.svg) {
+      return this.drawSvgQR();
+    }
+
     this._canvas = document.createElement("canvas");
 
     this.append(this._container);
@@ -117,6 +126,17 @@ export default class QRCodeStyling {
     } else {
       qrCanvas.drawQR(this._qr).then(this._resolveDrawingEnded, this._rejectDrawingEnded);
     }
+  }
+
+  drawSvgQR(): void {
+    this._qr = qrcode(this._options.qrOptions.typeNumber, this._options.qrOptions.errorCorrectionLevel);
+    this._qr.addData(this._options.data, this._options.qrOptions.mode || getMode(this._options.data));
+    this._qr.make();
+
+    this._svg = new QRSVG(this._options);
+    this.append(this._container);
+
+    this._drawingPromise = this._svg.drawQR(this._qr);
   }
 
   getImage(image: string, width: number, height: number): Promise<ImageBitmap | void> {
@@ -230,40 +250,77 @@ export default class QRCodeStyling {
       throw "Container should be a single DOM node";
     }
 
-    if (this._canvas) {
-      container.appendChild(this._canvas);
-    }
-
-    this._container = container;
-  }
-
-  download(downloadOptions?: Partial<DownloadOptions> | string): void {
-    if (!this._drawingPromise) return;
-
-    this._drawingPromise.then(() => {
-      if (!this._canvas) return;
-
-      let extension = "png";
-      let name = "qr";
-
-      //TODO remove deprecated code in the v2
-      if (typeof downloadOptions === "string") {
-        extension = downloadOptions;
-        console.warn(
-          "Extension is deprecated as argument for 'download' method, please pass object { name: '...', extension: '...' } as argument"
-        );
-      } else if (typeof downloadOptions === "object" && downloadOptions !== null) {
-        if (downloadOptions.name) {
-          name = downloadOptions.name;
-        }
-        if (downloadOptions.extension) {
-          extension = downloadOptions.extension;
-        }
+    if (this._options.type === drawTypes.canvas) {
+      if (this._canvas) {
+        container.appendChild(this._canvas);
+      }
+    } else {
+      if (this._svg) {
+        container.appendChild(this._svg.getElement());
       }
 
-      const data = this._canvas.toDataURL(`image/${extension}`);
-      downloadURI(data, `${name}.${extension}`);
-    });
+      this._container = container;
+    }
+  }
+
+  parseDownloadOptions(downloadOptions?: Partial<DownloadOptions> | string): { name: string; extension: Extension } {
+    let extension = "png";
+    let name = "qr";
+
+    //TODO remove deprecated code in the v2
+    if (typeof downloadOptions === "string") {
+      extension = downloadOptions;
+      console.warn(
+        "Extension is deprecated as argument for 'download' method, please pass object { name: '...', extension: '...' } as argument"
+      );
+    } else if (typeof downloadOptions === "object" && downloadOptions !== null) {
+      if (downloadOptions.name) {
+        name = downloadOptions.name;
+      }
+      if (downloadOptions.extension) {
+        extension = downloadOptions.extension;
+      }
+    }
+
+    return { name, extension: extension as Extension };
+  }
+
+  async download(downloadOptions?: Partial<DownloadOptions> | string): Promise<void> {
+    if (!this._drawingPromise) return Promise.resolve();
+
+    const { name, extension } = this.parseDownloadOptions(downloadOptions);
+
+    if (extension.toLowerCase() === "svg") {
+      return this.downloadSvg(name);
+    }
+
+    await this._drawingPromise;
+
+    if (!this._canvas) return;
+
+    const data = this._canvas.toDataURL(`image/${extension}`);
+    downloadURI(data, `${name}.${extension}`);
+  }
+
+  async downloadSvg(name: string): Promise<void> {
+    if (!this._qr) throw "QR code is empty";
+
+    let svg: QRSVG;
+
+    if (this._options.type === drawTypes.svg) {
+      svg = this._svg as QRSVG;
+      await this._drawingPromise;
+    } else {
+      svg = new QRSVG(this._originalOptions);
+      await svg.drawQR(this._qr);
+    }
+
+    const serializer = new XMLSerializer();
+    let source = serializer.serializeToString(svg.getElement());
+
+    source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+    downloadURI(url, `${name}.svg`);
   }
 
   clear(): void {
