@@ -3,9 +3,59 @@ export interface UnknownObject {
   [key: string]: any;
 }
 
-export type DotType = "dots" | "rounded" | "classy" | "classy-rounded" | "square" | "extra-rounded";
-export type CornerDotType = "dot" | "square";
-export type CornerSquareType = "dot" | "square" | "extra-rounded";
+export type DotType =
+  | "dots"
+  | "rounded"
+  | "classy"
+  | "classy-rounded"
+  | "square"
+  | "extra-rounded"
+  | "horizontal-rounded"
+  | "vertical-rounded"
+  | "star"
+  | "diamond"
+  | "x"
+  | "cross"
+  | "cross-rounded"
+  | "x-rounded"
+  | "heart"
+  | "sparkle"
+  | "ribbon"
+  | "diamond-special"
+  | "shake";
+export type CornerDotType =
+  | "dot"
+  | "square"
+  | "rounded"
+  | "square2"
+  | "square3"
+  | "dot2"
+  | "dot3"
+  | "dot4"
+  | "sun"
+  | "star"
+  | "diamond"
+  | "x"
+  | "x-rounded"
+  | "cross"
+  | "cross-rounded"
+  | "heart";
+export type CornerSquareType =
+  | "dot"
+  | "square"
+  | "extra-rounded"
+  | "shape1"
+  | "shape2"
+  | "shape3"
+  | "shape4"
+  | "shape5"
+  | "shape6"
+  | "shape7"
+  | "shape8"
+  | "shape9"
+  | "shape10"
+  | "shape11"
+  | "shape12";
 export type Extension = "png" | "jpeg" | "webp" | "svg";
 export type GradientType = "radial" | "linear";
 export type DrawType = "canvas" | "svg";

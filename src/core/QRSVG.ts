@@ -169,7 +169,7 @@ export default class QRSVG {
 
       return true;
     });
-    this.drawCorners();
+    await this.drawCorners();
 
     if (this._options.image) {
       this.drawImage({ width: drawImageSize.width, height: drawImageSize.height, count, dotSize });
@@ -281,16 +281,18 @@ export default class QRSVG {
           continue;
         }
 
-        dot.draw(
-          xBeginning + i * dotSize,
-          yBeginning + j * dotSize,
-          dotSize,
-          (xOffset: number, yOffset: number): boolean => {
+        dot.draw({
+          x: xBeginning + i * dotSize,
+          y: yBeginning + j * dotSize,
+          xIndex: i,
+          yIndex: j,
+          size: dotSize,
+          getNeighbor: (xOffset: number, yOffset: number): boolean => {
             if (i + xOffset < 0 || j + yOffset < 0 || i + xOffset >= count || j + yOffset >= count) return false;
             if (filter && !filter(i + xOffset, j + yOffset)) return false;
             return !!this._qr && this._qr.isDark(i + xOffset, j + yOffset);
           }
-        );
+        });
 
         if (dot._element && this._dotsClipPath) {
           this._dotsClipPath.appendChild(dot._element);
@@ -299,7 +301,7 @@ export default class QRSVG {
     }
   }
 
-  drawCorners(): void {
+  async drawCorners(): Promise<void> {
     if (!this._qr) {
       throw "QR code is not defined";
     }
@@ -322,11 +324,16 @@ export default class QRSVG {
         (options.height - options.frameOptions.topSize - options.frameOptions.bottomSize - count * dotSize) / 2
       ) + options.frameOptions.topSize;
 
+    await Promise.all([
+      QRCornerSquare.loadPath(options.cornersSquareOptions?.type),
+      QRCornerDot.loadPath(options.cornersDotOptions?.type)
+    ]);
+
     [
       [0, 0, 0],
       [1, 0, Math.PI / 2],
       [0, 1, -Math.PI / 2]
-    ].forEach(([column, row, rotation]) => {
+    ].forEach(([column, row, rotation], cornerIndex) => {
       const x = xBeginning + column * dotSize * (count - 7);
       const y = yBeginning + row * dotSize * (count - 7);
       let cornersSquareClipPath = this._dotsClipPath;
@@ -367,12 +374,15 @@ export default class QRSVG {
               continue;
             }
 
-            dot.draw(
-              x + i * dotSize,
-              y + j * dotSize,
-              dotSize,
-              (xOffset: number, yOffset: number): boolean => !!squareMask[i + xOffset]?.[j + yOffset]
-            );
+            dot.draw({
+              x: x + i * dotSize,
+              y: y + j * dotSize,
+              xIndex: i,
+              yIndex: j,
+              size: dotSize,
+              cornerIndex: cornerIndex + 1,
+              getNeighbor: (xOffset: number, yOffset: number): boolean => !!squareMask[i + xOffset]?.[j + yOffset]
+            });
 
             if (dot._element && cornersSquareClipPath) {
               cornersSquareClipPath.appendChild(dot._element);
@@ -416,12 +426,16 @@ export default class QRSVG {
               continue;
             }
 
-            dot.draw(
-              x + i * dotSize,
-              y + j * dotSize,
-              dotSize,
-              (xOffset: number, yOffset: number): boolean => !!dotMask[i + xOffset]?.[j + yOffset]
-            );
+            dot.draw({
+              x: x + i * dotSize,
+              y: y + j * dotSize,
+              xIndex: i,
+              yIndex: j,
+              size: dotSize,
+              // square corners range from 0 to 3 and dot corners from 4 to 6
+              cornerIndex: cornerIndex + 4,
+              getNeighbor: (xOffset: number, yOffset: number): boolean => !!dotMask[i + xOffset]?.[j + yOffset]
+            });
 
             if (dot._element && cornersDotClipPath) {
               cornersDotClipPath.appendChild(dot._element);
